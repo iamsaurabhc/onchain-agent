@@ -1,0 +1,33 @@
+{
+  "count": 7,
+  "trees": [
+    {
+      "file": "batch1.json",
+      "size": 5
+    },
+    {
+      "file": "tree_1.json",
+      "size": 1
+    },
+    {
+      "file": "tree_2.json",
+      "size": 2
+    },
+    {
+      "file": "tree_3.json",
+      "size": 3
+    },
+    {
+      "file": "tree_8.json",
+      "size": 8
+    },
+    {
+      "file": "tree_16.json",
+      "size": 16
+    },
+    {
+      "file": "tree_64.json",
+      "size": 64
+    }
+  ]
+}

@@ -1,50 +1,71 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { utf8 } from "../src/bytes.js";
 import * as merkle from "../src/merkle.js";
 import type { Hex32 } from "../src/algorithms.js";
 import { FIXTURES } from "./_paths.js";
 
-interface Batch {
+interface Tree {
   leaves: Hex32[];
   root: Hex32;
   proofs: Record<string, Hex32[]>;
+  nonMembers: Hex32[];
 }
 
-const batch: Batch = JSON.parse(
-  readFileSync(join(FIXTURES, "merkle", "batch1.json"), "utf8"),
+interface TreeManifest {
+  count: number;
+  trees: { file: string; size: number }[];
+}
+
+const MERKLE_DIR = join(FIXTURES, "merkle");
+const manifest: TreeManifest = JSON.parse(
+  readFileSync(join(MERKLE_DIR, "manifest.json"), "utf8"),
 );
 
-describe("merkle golden batch", () => {
-  it("rebuilds the same root from the golden leaves", () => {
-    expect(merkle.buildRoot(batch.leaves)).toBe(batch.root);
-  });
+function loadTree(file: string): Tree {
+  return JSON.parse(readFileSync(join(MERKLE_DIR, file), "utf8"));
+}
 
-  it("every member verifies with its golden proof (membership soundness)", () => {
-    for (const leaf of batch.leaves) {
-      expect(merkle.verify(leaf, batch.root, batch.proofs[leaf])).toBe(true);
-    }
-  });
+describe("merkle golden trees", () => {
+  for (const { file, size } of manifest.trees) {
+    describe(`${file} (size ${size})`, () => {
+      const tree = loadTree(file);
 
-  it("regenerated proofs match the golden proofs", () => {
-    for (const leaf of batch.leaves) {
-      expect(merkle.getProof(batch.leaves, leaf)).toEqual(batch.proofs[leaf]);
-    }
-  });
+      it("rebuilds the same root from the golden leaves", () => {
+        expect(merkle.buildRoot(tree.leaves)).toBe(tree.root);
+      });
 
-  it("a non-member leaf never verifies", () => {
-    const fake = merkle.leafHash(utf8("not-in-the-tree"));
-    const someProof = batch.proofs[batch.leaves[0]];
-    expect(merkle.verify(fake, batch.root, someProof)).toBe(false);
-  });
+      it("every member verifies with its golden proof (membership soundness)", () => {
+        for (const leaf of tree.leaves) {
+          expect(merkle.verify(leaf, tree.root, tree.proofs[leaf])).toBe(true);
+        }
+      });
 
-  it("a tampered proof fails", () => {
-    const leaf = batch.leaves[0];
-    const proof = [...batch.proofs[leaf]];
-    if (proof.length > 0) {
-      proof[0] = ("0x" + "ff".repeat(32)) as Hex32;
-      expect(merkle.verify(leaf, batch.root, proof)).toBe(false);
-    }
-  });
+      it("regenerated proofs match the golden proofs", () => {
+        for (const leaf of tree.leaves) {
+          expect(merkle.getProof(tree.leaves, leaf)).toEqual(tree.proofs[leaf]);
+        }
+      });
+
+      it("no declared non-member ever verifies", () => {
+        const someProof = tree.proofs[tree.leaves[0]];
+        for (const nonMember of tree.nonMembers) {
+          expect(merkle.verify(nonMember, tree.root, someProof)).toBe(false);
+        }
+      });
+
+      it("a tampered proof fails", () => {
+        const leaf = tree.leaves[0];
+        const proof = [...tree.proofs[leaf]];
+        if (proof.length > 0) {
+          proof[0] = ("0x" + "ff".repeat(32)) as Hex32;
+          expect(merkle.verify(leaf, tree.root, proof)).toBe(false);
+        } else {
+          // size-1 tree: any non-empty proof must break verification.
+          const fakeProof = [("0x" + "ff".repeat(32)) as Hex32];
+          expect(merkle.verify(leaf, tree.root, fakeProof)).toBe(false);
+        }
+      });
+    });
+  }
 });

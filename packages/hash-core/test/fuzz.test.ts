@@ -82,6 +82,29 @@ describe("fuzz: random Merkle trees — membership & non-membership", () => {
   });
 });
 
+describe("merkle edge sizes: single leaf and odd trees", () => {
+  it("size-1 tree: root == leaf and empty proof verifies", () => {
+    const leaf = merkle.leafHash(utf8("only-leaf"));
+    expect(merkle.buildRoot([leaf])).toBe(leaf);
+    expect(merkle.getProof([leaf], leaf)).toEqual([]);
+    expect(merkle.verify(leaf, leaf, [])).toBe(true);
+  });
+
+  it("odd-sized tree (3 leaves): every member verifies, carry-odd leaf has a short proof", () => {
+    const leaves = [
+      merkle.leafHash(utf8("a")),
+      merkle.leafHash(utf8("b")),
+      merkle.leafHash(utf8("c")),
+    ];
+    const root = merkle.buildRoot(leaves);
+    for (const leaf of leaves) {
+      expect(merkle.verify(leaf, root, merkle.getProof(leaves, leaf))).toBe(true);
+    }
+    // The trailing odd leaf is carried up, so its proof is shorter than a full path.
+    expect(merkle.getProof(leaves, leaves[2]).length).toBe(1);
+  });
+});
+
 describe("fuzz: leaf hashing matches keccak256 of leaf bytes", () => {
   it("leafHash(x) === keccak256(x)", () => {
     fc.assert(

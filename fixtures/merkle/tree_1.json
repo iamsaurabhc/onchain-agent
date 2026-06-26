@@ -1,0 +1,18 @@
+{
+  "algo": 32,
+  "leaves": [
+    "0x21cb90394cbbcdcaf43165e22fb73e0262a992c5bcc5d52ef999f80b17fd4087"
+  ],
+  "root": "0x21cb90394cbbcdcaf43165e22fb73e0262a992c5bcc5d52ef999f80b17fd4087",
+  "proofs": {
+    "0x21cb90394cbbcdcaf43165e22fb73e0262a992c5bcc5d52ef999f80b17fd4087": []
+  },
+  "proofArrays": [
+    []
+  ],
+  "nonMembers": [
+    "0x3c625c3159dd5cbc25a290de2216ad2256fd9726dabc8437f30f87af53465287",
+    "0x7891cc9daebb8d05971ef341043bf6d52868a64c47f9cda37eeb7fe6a7c39693",
+    "0x54feb2518fa63fff6969882e964073a937999446ab3d70d48cd75eb8173efc1e"
+  ]
+}

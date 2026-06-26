@@ -8,7 +8,9 @@
     "fixtures": "pnpm -C packages/hash-core fixtures",
     "test:ts": "pnpm -C packages/hash-core test",
     "test:sol": "forge test --root contracts",
-    "test": "pnpm run test:ts && pnpm run test:sol"
+    "test:e2e": "forge build --root contracts && pnpm -C packages/anchor-e2e test",
+    "test": "pnpm run test:ts && pnpm run test:sol",
+    "test:all": "pnpm run test && pnpm run test:e2e"
   },
   "license": "MIT",
   "pnpm": {
