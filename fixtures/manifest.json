@@ -1,0 +1,42 @@
+{
+  "count": 6,
+  "payloads": [
+    {
+      "name": "doc.txt",
+      "codecId": "raw",
+      "algo": 1,
+      "salted": false
+    },
+    {
+      "name": "credential.json",
+      "codecId": "jcs",
+      "algo": 1,
+      "salted": false
+    },
+    {
+      "name": "api_response.json",
+      "codecId": "jcs",
+      "algo": 2,
+      "salted": false
+    },
+    {
+      "name": "image.bin",
+      "codecId": "raw",
+      "algo": 2,
+      "salted": false
+    },
+    {
+      "name": "dataset.bin",
+      "codecId": "raw",
+      "algo": 17,
+      "salted": true
+    },
+    {
+      "name": "log_batch.jsonl",
+      "codecId": "raw",
+      "algo": 18,
+      "salted": true
+    }
+  ],
+  "merkle": "merkle/batch1.json"
+}

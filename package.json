@@ -1,0 +1,17 @@
+{
+  "name": "onchain-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anchoring & Verification capability — Phase A hashing & canonicalization library",
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "fixtures": "pnpm -C packages/hash-core fixtures",
+    "test:ts": "pnpm -C packages/hash-core test",
+    "test:sol": "forge test --root contracts",
+    "test": "pnpm run test:ts && pnpm run test:sol"
+  },
+  "license": "MIT",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

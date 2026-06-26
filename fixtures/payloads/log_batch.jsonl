@@ -1,0 +1,4 @@
+{"ts":"2026-06-26T00:00:01Z","actor":"agent","action":"propose","ok":true}
+{"ts":"2026-06-26T00:00:02Z","actor":"policy","action":"allow","ok":true}
+{"ts":"2026-06-26T00:00:03Z","actor":"agent","action":"execute","ok":true}
+{"ts":"2026-06-26T00:00:04Z","actor":"agent","action":"anchor","ok":true}
