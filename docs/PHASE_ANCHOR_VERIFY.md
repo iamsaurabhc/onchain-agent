@@ -390,8 +390,18 @@ verify by hash / by payload / by tx / by log-scan; assert a never-anchored hash 
 - **Goal:** reference agent skills and optional wiring into the [info.md](../info.md) core.
 - **Skills:** `anchor-payload`, `verify-anchor` (translation only — no policy logic in the agent
 layer, per info.md §5.2).
-- **LLM provider:** Google ADK via LiteLLM, default provider **OpenRouter** (model configurable;
-`OPENROUTER_API_KEY` in `.env.local`). Two free, tool-calling-capable models are the defaults:
+- **Agent framework:** [**Mastra**](https://mastra.ai) (TypeScript-native), chosen to keep the
+agent layer in the same TS stack as `hash-core` and the Phase D MCP server — no separate Python
+runtime. Rationale: the agent layer is intentionally a thin translator (A2A task → MCP tool call →
+schema-conformant response), and Mastra ships both protocols we need as **core dependencies**:
+  - **MCP** via `@modelcontextprotocol/sdk` (Mastra `MCPClient`) — connects directly to the Phase D
+  MCP server with no extra plugin; `MCPServer` is available if we later expose tools.
+  - **A2A** via the official `@a2a-js/sdk` (both client and server sides) — interoperable with any
+  A2A agent (ADK, LangGraph, etc.), not a walled garden. Skills are defined as Mastra agents/tools
+  and exposed over A2A with no bespoke protocol bridging.
+- **LLM provider:** models are routed through Mastra's Vercel AI SDK provider layer; default
+provider **OpenRouter** (model configurable; `OPENROUTER_API_KEY` in `.env.local`). Two free,
+tool-calling-capable models are the defaults:
   - **Large / orchestration:** `nvidia/nemotron-3-ultra-550b-a55b:free` — hybrid Transformer-Mamba
   MoE (55B active / 550B total), up to 1M-token context, for multi-step reasoning/planning and
   long-running agentic workflows.
