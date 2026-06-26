@@ -1,0 +1,10 @@
+{
+  "name": "batch_merkle_root",
+  "hash": "0x4938a282fd3c4c406cbea286db9ccca40b06016ed75e0a1d51685bf82bb29814",
+  "algo": 32,
+  "metadataHash": "0xa7983f224040c665f86c37c3929a6a364a410b3b9b02278ba7cd6e237d1761a6",
+  "isMerkleRoot": true,
+  "anchorer": "0x00000000000000000000000000000000000000B2",
+  "blockTimestamp": 1750000300,
+  "blockNumber": 1000030
+}

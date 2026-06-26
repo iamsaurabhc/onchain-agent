@@ -1,0 +1,10 @@
+{
+  "name": "dataset_salted",
+  "hash": "0x5adb668b85ca64c5fb849c0ed5057731c585c5a25ad6f5bc33fa08b60262889e",
+  "algo": 17,
+  "metadataHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "isMerkleRoot": false,
+  "anchorer": "0x00000000000000000000000000000000000000B2",
+  "blockTimestamp": 1750000200,
+  "blockNumber": 1000020
+}

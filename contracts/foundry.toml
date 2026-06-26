@@ -9,6 +9,11 @@ optimizer_runs = 200
 # Foundry root is contracts/, so the shared goldens live one level up.
 fs_permissions = [{ access = "read", path = "../fixtures" }]
 
+[invariant]
+runs = 64
+depth = 64
+fail_on_revert = true
+
 [fmt]
 line_length = 100
 tab_width = 4

@@ -1,0 +1,10 @@
+{
+  "name": "api_sha256_with_metadata",
+  "hash": "0xfbd7e312b6370d5ec39b518dc65414617a3a84d85bb06fcdb00951e2db1922d1",
+  "algo": 2,
+  "metadataHash": "0xb1a910c8697d929f79dd9584ab799a9560d7328e2dad798d9919871ddd6a96a3",
+  "isMerkleRoot": false,
+  "anchorer": "0x00000000000000000000000000000000000000A1",
+  "blockTimestamp": 1750000100,
+  "blockNumber": 1000010
+}

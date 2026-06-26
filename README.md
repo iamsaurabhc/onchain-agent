@@ -1,4 +1,4 @@
-# onchain-agent — Anchor & Verify
+# onchain-agent: Anchor & Verify
 
 > Anchor a cryptographic hash of **any** off-chain payload to a testnet, get back an on-chain
 > reference, and later **verify against the live chain** whether that payload was genuinely

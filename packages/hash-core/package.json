@@ -10,7 +10,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "fixtures": "tsx scripts/genFixtures.ts",
+    "fixtures": "tsx scripts/genFixtures.ts && tsx scripts/genAnchorFixtures.ts",
+    "fixtures:anchor": "tsx scripts/genAnchorFixtures.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

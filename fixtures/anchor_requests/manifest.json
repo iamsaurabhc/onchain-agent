@@ -1,0 +1,25 @@
+{
+  "count": 4,
+  "cases": [
+    {
+      "name": "doc_keccak",
+      "algo": 1,
+      "isMerkleRoot": false
+    },
+    {
+      "name": "api_sha256_with_metadata",
+      "algo": 2,
+      "isMerkleRoot": false
+    },
+    {
+      "name": "dataset_salted",
+      "algo": 17,
+      "isMerkleRoot": false
+    },
+    {
+      "name": "batch_merkle_root",
+      "algo": 32,
+      "isMerkleRoot": true
+    }
+  ]
+}
