@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { MCPServer } from "@mastra/mcp";
+import { loadLocalEnv } from "./loadEnv.js";
 import { loadConfig } from "./config.js";
 import { ViemRegistryClient } from "./registryClient.js";
 import { createTools } from "./tools/index.js";
@@ -9,6 +10,7 @@ import { createTools } from "./tools/index.js";
  * MCP tools and serve them over stdio for any MCP host (Cursor, Claude, etc.).
  */
 async function main(): Promise<void> {
+  loadLocalEnv(import.meta.url);
   const config = loadConfig();
   const client = new ViemRegistryClient(config);
   const tools = createTools(client, config);

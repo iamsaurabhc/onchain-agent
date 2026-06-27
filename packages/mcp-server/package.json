@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "tsx src/server.ts",
+    "smoke": "tsx scripts/smoke-live.ts",
+    "smoke:mcp": "tsx scripts/smoke-mcp.ts",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "typecheck": "tsc --noEmit"
@@ -21,6 +23,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^22.10.0",
     "@viem/anvil": "^0.0.10",
     "fast-check": "^3.23.0",

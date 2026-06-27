@@ -10,6 +10,9 @@
     "test:sol": "forge test --root contracts",
     "test:mcp": "pnpm -C packages/mcp-server test",
     "test:mcp:e2e": "forge build --root contracts && pnpm -C packages/mcp-server test:e2e",
+    "mcp:start": "pnpm -C packages/mcp-server start",
+    "mcp:smoke": "pnpm -C packages/mcp-server smoke",
+    "mcp:smoke:mcp": "pnpm -C packages/mcp-server smoke:mcp",
     "test:e2e": "forge build --root contracts && pnpm -C packages/anchor-e2e test",
     "test": "pnpm run test:ts && pnpm run test:sol && pnpm run test:mcp",
     "test:all": "pnpm run test && pnpm run test:e2e && pnpm run test:mcp:e2e"
