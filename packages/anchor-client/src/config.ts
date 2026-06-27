@@ -6,6 +6,19 @@ export const DEFAULT_CHAIN_ID = 80002;
 /** Default confirmation depth before `verified: true` (§5.6). */
 export const DEFAULT_CONFIRMATIONS = 64;
 
+/**
+ * Default per-request `eth_getLogs` block-range window. Many providers cap this;
+ * Alchemy's free tier allows only 10 blocks, so the scan is chunked to stay
+ * within whatever limit is configured.
+ */
+export const DEFAULT_LOG_SCAN_MAX_RANGE = 500;
+
+/**
+ * Default total look-back window (blocks from head) for an event-log scan.
+ * `0` means "scan back to genesis" (chunked, with early exit on first match).
+ */
+export const DEFAULT_LOG_SCAN_LOOKBACK = 0;
+
 /** Runtime configuration resolved from the environment. */
 export interface Config {
   rpcUrl: string;
@@ -15,6 +28,10 @@ export interface Config {
   anchorerPrivateKey?: `0x${string}`;
   /** Minimum confirmations before a record is considered final. */
   confirmations: number;
+  /** Max blocks per `eth_getLogs` request (provider range cap). */
+  logScanMaxRange?: number;
+  /** Total blocks back from head to scan for logs; 0 = to genesis. */
+  logScanLookback?: number;
 }
 
 function requireEnv(env: NodeJS.ProcessEnv, key: string): string {
@@ -72,5 +89,31 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ? asPrivateKey(rawKey, "ANCHORER_PRIVATE_KEY")
     : undefined;
 
-  return { rpcUrl, chainId, registryAddress, anchorerPrivateKey, confirmations };
+  const logScanMaxRange = env.LOG_SCAN_MAX_RANGE
+    ? Number(env.LOG_SCAN_MAX_RANGE)
+    : DEFAULT_LOG_SCAN_MAX_RANGE;
+  if (!Number.isInteger(logScanMaxRange) || logScanMaxRange <= 0) {
+    throw new Error(
+      `LOG_SCAN_MAX_RANGE must be a positive integer, got: ${env.LOG_SCAN_MAX_RANGE}`,
+    );
+  }
+
+  const logScanLookback = env.LOG_SCAN_LOOKBACK
+    ? Number(env.LOG_SCAN_LOOKBACK)
+    : DEFAULT_LOG_SCAN_LOOKBACK;
+  if (!Number.isInteger(logScanLookback) || logScanLookback < 0) {
+    throw new Error(
+      `LOG_SCAN_LOOKBACK must be a non-negative integer, got: ${env.LOG_SCAN_LOOKBACK}`,
+    );
+  }
+
+  return {
+    rpcUrl,
+    chainId,
+    registryAddress,
+    anchorerPrivateKey,
+    confirmations,
+    logScanMaxRange,
+    logScanLookback,
+  };
 }

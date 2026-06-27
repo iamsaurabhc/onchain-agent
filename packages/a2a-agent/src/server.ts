@@ -1,31 +1,40 @@
 #!/usr/bin/env node
 /**
- * Phase F HTTP entrypoint. Delegates to `mastra dev` for A2A + agent-card serving.
+ * Phase F HTTP entrypoint.
+ *
+ * Starts the Mastra Hono server directly via `createNodeServer` (run with tsx),
+ * rather than the `mastra dev` CLI. The CLI bundler packs every workspace
+ * dependency as a real npm package; our workspace packages ship raw TypeScript
+ * (`main: src/index.ts`), which Node's ESM loader cannot import
+ * (ERR_UNKNOWN_FILE_EXTENSION). tsx transpiles those `.ts` files on the fly, so
+ * the server boots cleanly while still exposing the native A2A endpoints:
+ *   - GET  /.well-known/:agentId/agent-card.json
+ *   - POST /a2a/:agentId
+ *
  * Set OPENROUTER_API_KEY and chain env vars before starting.
  */
-import { spawn } from "node:child_process";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { createNodeServer } from "@mastra/deployer/server";
 import { loadA2AConfig } from "./config.js";
-
-const pkgRoot = dirname(fileURLToPath(import.meta.url)) + "/..";
+import { mastra } from "./mastra/index.js";
 
 async function main(): Promise<void> {
   const config = loadA2AConfig();
-  const port = String(config.a2aPort);
+  const port = config.a2aPort;
 
-  console.log(`Starting Mastra A2A server on port ${port}…`);
-  console.log("Agent cards: anchor-payload, verify-anchor");
+  // `tools` is required by some @mastra/deployer versions and absent in others;
+  // include it and cast to the resolved parameter type so the entry compiles
+  // regardless of which deployer typings are picked up.
+  await createNodeServer(mastra, {
+    isDev: true,
+    playground: false,
+    tools: {},
+  } as Parameters<typeof createNodeServer>[1]);
 
-  const child = spawn("pnpm", ["exec", "mastra", "dev", "--port", port], {
-    cwd: pkgRoot,
-    stdio: "inherit",
-    env: { ...process.env, MASTRA_DEV_NO_OPEN: "true" },
-  });
-
-  child.on("exit", (code) => {
-    process.exit(code ?? 0);
-  });
+  console.log(`Mastra A2A server listening on http://localhost:${port}`);
+  console.log("Agents: anchor-payload, verify-anchor");
+  console.log(
+    `Agent cards: http://localhost:${port}/.well-known/anchor-payload/agent-card.json`,
+  );
 }
 
 main().catch((err) => {
