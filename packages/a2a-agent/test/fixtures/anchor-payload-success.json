@@ -1,0 +1,18 @@
+{
+  "task": {
+    "skill": "anchor-payload",
+    "input": {
+      "codecId": "raw",
+      "algo": 1,
+      "encoding": "utf8",
+      "payload": "hello-world"
+    }
+  },
+  "expected": {
+    "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+    "chainId": 80002,
+    "algo": 1,
+    "codecId": "raw",
+    "isMerkleRoot": false
+  }
+}

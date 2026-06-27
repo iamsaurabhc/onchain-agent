@@ -1,0 +1,30 @@
+{
+  "name": "OnchainAnchor",
+  "description": "Anchor cryptographic hashes of arbitrary off-chain payloads to a testnet via AnchorRegistry.",
+  "url": "http://localhost:4111",
+  "version": "0.1.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "anchor-payload",
+      "name": "anchor-payload",
+      "description": "Anchor a payload's hash on-chain and return hash + tx/block reference.",
+      "tags": ["anchor", "hash", "blockchain"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    },
+    {
+      "id": "verify-anchor",
+      "name": "verify-anchor",
+      "description": "Verify against the live testnet whether a payload/hash was genuinely anchored.",
+      "tags": ["verify", "hash", "blockchain"],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}

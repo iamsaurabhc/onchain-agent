@@ -1,0 +1,17 @@
+{
+  "task": {
+    "skill": "verify-anchor",
+    "input": {
+      "method": "by_payload",
+      "payload": "never-anchored",
+      "codecId": "raw",
+      "algo": 1,
+      "encoding": "utf8"
+    }
+  },
+  "expected": {
+    "verified": false,
+    "method": "by_payload",
+    "reason": "NOT_FOUND"
+  }
+}

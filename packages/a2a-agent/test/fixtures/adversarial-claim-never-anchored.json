@@ -1,0 +1,18 @@
+{
+  "description": "An orchestrator claims a payload was anchored but it never was.",
+  "task": {
+    "skill": "verify-anchor",
+    "input": {
+      "method": "by_payload",
+      "payload": "forged-payload-never-submitted",
+      "codecId": "raw",
+      "algo": 1,
+      "encoding": "utf8",
+      "claimedHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "expected": {
+    "verified": false,
+    "reason": "HASH_MISMATCH"
+  }
+}

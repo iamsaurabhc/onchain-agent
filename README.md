@@ -10,16 +10,16 @@ off-chain, write only that hash on-chain, and can prove later that the exact pay
 or before a given block time. Verification always re-derives the hash and re-queries the chain,
 so a false claim ("I anchored this") resolves to `verified: false`.
 
-> **Status (v0.1):** Phases **A–E are implemented:**
+> **Status (v0.1):** Phases **A–F are implemented:**
 >
 > - **Phase A** — [`@onchain-agent/hash-core`](packages/hash-core): cross-language hashing & canonicalization + Solidity parity tests.
 > - **Phase B** — [`AnchorRegistry`](contracts/src/AnchorRegistry.sol): immutable, event-mirrored anchoring (first-seen wins).
 > - **Phase C** — Merkle batching: sorted-pair proofs compatible with OpenZeppelin + live anvil integration ([`anchor-e2e`](packages/anchor-e2e)).
 > - **Phase D** — [`@onchain-agent/mcp-server`](packages/mcp-server): six Mastra MCP tools over stdio, with live smoke tests against Amoy or local anvil.
 > - **Phase E** — [`@onchain-agent/verify-engine`](packages/verify-engine): unified six-method verification engine + optional live Amoy e2e ([`anchor-client`](packages/anchor-client) shared RPC layer).
+> - **Phase F** — [`@onchain-agent/a2a-agent`](packages/a2a-agent): Mastra A2A skills (`anchor-payload`, `verify-anchor`) with deterministic tool-routing cores + adversarial tests.
 >
-> **Planned:** Phase F (Mastra A2A skills + optional safety-core wiring). The full spec lives in
-> [docs/PHASE_ANCHOR_VERIFY.md](docs/PHASE_ANCHOR_VERIFY.md). This README is updated as each phase lands.
+> The full spec lives in [docs/PHASE_ANCHOR_VERIFY.md](docs/PHASE_ANCHOR_VERIFY.md).
 >
 > **Related (separate protocol track):** [docs/PHASE_DEX.md](docs/PHASE_DEX.md) — a from-scratch
 > constant-product AMM DEX design doc (same phase-wise, test-first methodology; reuses the safety
@@ -363,10 +363,14 @@ onchain-agent/
 │   ├── anchor-e2e/            # Phase C: live anvil Merkle root + proof integration
 │   ├── anchor-client/         # Phase E: shared config, RegistryClient, result types
 │   ├── verify-engine/         # Phase E: unified six-method VerificationEngine
-│   └── mcp-server/            # Phase D/E: Mastra MCPServer, thin tool wrappers, smoke scripts
-│       ├── src/tools/         # delegate to verify-engine
-│       ├── scripts/           # smoke-live.ts, smoke-mcp.ts
-│       └── test/fixtures/     # golden MCP request/response pairs per tool
+│   ├── mcp-server/            # Phase D/E: Mastra MCPServer, thin tool wrappers, smoke scripts
+│   │   ├── src/tools/         # delegate to verify-engine
+│   │   ├── scripts/           # smoke-live.ts, smoke-mcp.ts
+│   │   └── test/fixtures/     # golden MCP request/response pairs per tool
+│   └── a2a-agent/             # Phase F: Mastra A2A skills (anchor-payload, verify-anchor)
+│       ├── src/skills/        # deterministic tool-routing cores
+│       ├── public/            # A2A agent card (/.well-known/agent-card.json)
+│       └── test/fixtures/     # task→response goldens incl. adversarial case
 ├── fixtures/                  # shared cross-language goldens (Solidity + TS assert the same)
 │   ├── payloads/              # one representative input per taxonomy category
 │   ├── expected/              # golden { codecId, algo, salt?, hash } per payload
@@ -555,8 +559,10 @@ Tests follow the unit → fuzz → invariant → integration taxonomy.
 - **Phase E — Verification engine / Amoy integration.** [`@onchain-agent/verify-engine`](packages/verify-engine)
   with all six methods (including event-log scan + REORG detection), golden `fixtures/verify_cases/`,
   and optional live Amoy e2e (`AMOY_E2E=1 pnpm test:verify:amoy`). **Implemented.**
-- **Phase F — A2A skills + optional core integration + docs.** Reference agent skills
-  (`anchor-payload`, `verify-anchor`) and optional wiring into the safety core. *Planned.*
+- **Phase F — A2A skills + docs.** [`@onchain-agent/a2a-agent`](packages/a2a-agent): Mastra-native
+  A2A skills (`anchor-payload`, `verify-anchor`), hybrid LLM surface + deterministic cores,
+  adversarial fixtures/tests, and anvil e2e. Executor-gated anchoring is documented but
+  **out of scope** until `AgentExecutor` contracts land. **Implemented.**
 
 ### Phase dependency graph
 
@@ -592,20 +598,36 @@ flowchart LR
 
 ---
 
-## Agent layer (Phase F preview)
+## Agent layer (Phase F)
 
-> Planned. The agent layer is intentionally a thin translator (A2A task → MCP tool call →
-> schema-conformant response) with **no policy logic of its own** — all enforcement stays at the
-> contract layer.
+The agent layer is intentionally a thin translator (A2A task → MCP tool call →
+schema-conformant response) with **no policy logic of its own** — all enforcement stays at the
+contract layer.
 
-- **Framework:** [Mastra](https://mastra.ai) (TypeScript-native), keeping the agent layer in the
-  same stack as `hash-core` and the MCP server.
-- **Protocols:** MCP via `@modelcontextprotocol/sdk`; A2A via the official `@a2a-js/sdk`
-  (interoperable with any A2A agent).
-- **Skills:** `anchor-payload` and `verify-anchor`. The key adversarial test: an agent that
-  *claims* to have anchored a payload it never anchored must get `verified: false`.
-- **LLM provider:** routed through Mastra's Vercel AI SDK layer; default provider OpenRouter,
-  model configurable via env so any tool-calling model can be swapped in without code changes.
+- **Package:** [`@onchain-agent/a2a-agent`](packages/a2a-agent)
+- **Framework:** [Mastra](https://mastra.ai) (TypeScript-native), same stack as `hash-core` and the MCP server.
+- **Skills:** `anchor-payload` and `verify-anchor`. Deterministic cores route to Phase D MCP tools;
+  LLM agents (OpenRouter) are the conversational surface only.
+- **Protocols:** MCP via Mastra `MCPClient` (stdio to Phase D server); A2A via Mastra-native
+  agent cards at `public/.well-known/agent-card.json` and `mastra dev`.
+- **Adversarial test:** an orchestrator that *claims* to have anchored a payload it never anchored
+  gets `verified: false` (`NOT_FOUND` / `HASH_MISMATCH`).
+
+### Run the A2A agent
+
+```bash
+# Unit tests (deterministic cores, no LLM)
+pnpm test:a2a
+
+# E2e: skills → MCP tools → AnchorRegistry on anvil
+pnpm test:a2a:e2e
+
+# Dev server (needs OPENROUTER_API_KEY + chain env in .env.local)
+pnpm a2a:dev
+```
+
+Copy [packages/a2a-agent/.env.example](packages/a2a-agent/.env.example) keys into repo root
+`.env.local` (chain vars are shared with the MCP server).
 
 ---
 

@@ -419,8 +419,11 @@ tool-calling-capable models are the defaults:
 - **Input/output fixtures:** `a2a-agent/test/fixtures/*.json` task→response goldens, incl. the
 adversarial case.
 - **Unit (regression):** skill request/response mapping; error propagation from MCP taxonomy.
-- **Integration:** end-to-end agent → MCP → contract on a local node; optional executor-gated
-path with allowlist on and circuit breaker tripped.
+- **Integration:** end-to-end agent → MCP → contract on a local node (`pnpm test:a2a:e2e`).
+  Optional executor-gated path with allowlist on and circuit breaker tripped is **out of scope
+  for this repo phase**: `AgentExecutor` / `PolicyRegistry` / `CircuitBreaker` contracts are not
+  present in `contracts/src` (only `AnchorRegistry`). The integration point is documented in
+  [info.md](../info.md) §8.2 for when those contracts land.
 
 ### Phase dependency graph
 
