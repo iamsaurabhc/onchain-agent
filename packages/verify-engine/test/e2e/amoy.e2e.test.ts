@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { merkle, utf8, hashPayload, CodecId, AlgoTag, type Hex32 } from "@onchain-agent/hash-core";
 import {
   DEFAULT_CHAIN_ID,
@@ -55,7 +55,9 @@ describe.skipIf(!AMOY_E2E)("e2e: live Amoy anchor-then-verify", () => {
 
   it("anchor → poll confirmations → verify by hash/payload/tx/log", async () => {
     const payload = `amoy-e2e-${Date.now()}`;
-    const { hash } = hashPayload(payload, {
+    // Derive from UTF-8 bytes exactly as the production by-payload path does
+    // (toPayloadArg → utf8). The raw normalizer expects bytes, not a string.
+    const { hash } = hashPayload(utf8(payload), {
       codecId: CodecId.RAW,
       algo: AlgoTag.KECCAK256,
     });
@@ -99,7 +101,12 @@ describe.skipIf(!AMOY_E2E)("e2e: live Amoy anchor-then-verify", () => {
   });
 
   it("merkle batch anchor → verify_merkle member", async () => {
-    const leaves = ["amoy-leaf-a", "amoy-leaf-b", "amoy-leaf-c"].map((s) => utf8(s));
+    // Unique leaves per run so the root differs each time; the registry is
+    // first-seen-wins, so a static root would revert (AlreadyAnchored) on re-run.
+    const nonce = Date.now();
+    const leaves = [`amoy-leaf-a-${nonce}`, `amoy-leaf-b-${nonce}`, `amoy-leaf-c-${nonce}`].map(
+      (s) => utf8(s),
+    );
     const leafHashes = leaves.map((b) => merkle.leafHash(b));
     const root = merkle.buildRoot(leafHashes);
 

@@ -24,6 +24,10 @@ so a false claim ("I anchored this") resolves to `verified: false`.
 > **Related (separate protocol track):** [docs/PHASE_DEX.md](docs/PHASE_DEX.md) — a from-scratch
 > constant-product AMM DEX design doc (same phase-wise, test-first methodology; reuses the safety
 > core and `AnchorRegistry` where they fit). Design-only; not part of the anchor/verify capability.
+>
+> **Distribution (Phases G–M):** [docs/PHASE_DISTRIBUTION.md](docs/PHASE_DISTRIBUTION.md) — publish
+> the MCP server and A2A agent to registries and directories, wallet funding playbook for clones,
+> and content/community launch steps.
 
 ---
 
@@ -369,7 +373,7 @@ onchain-agent/
 │   │   └── test/fixtures/     # golden MCP request/response pairs per tool
 │   └── a2a-agent/             # Phase F: Mastra A2A skills (anchor-payload, verify-anchor)
 │       ├── src/skills/        # deterministic tool-routing cores
-│       ├── public/            # A2A agent card (/.well-known/agent-card.json)
+│       ├── src/server.ts      # createNodeServer entry (A2A cards + /a2a/<id>), run via tsx
 │       └── test/fixtures/     # task→response goldens incl. adversarial case
 ├── fixtures/                  # shared cross-language goldens (Solidity + TS assert the same)
 │   ├── payloads/              # one representative input per taxonomy category
@@ -609,7 +613,9 @@ contract layer.
 - **Skills:** `anchor-payload` and `verify-anchor`. Deterministic cores route to Phase D MCP tools;
   LLM agents (OpenRouter) are the conversational surface only.
 - **Protocols:** MCP via Mastra `MCPClient` (stdio to Phase D server); A2A via Mastra-native
-  agent cards at `public/.well-known/agent-card.json` and `mastra dev`.
+  agent cards at `/.well-known/<agentId>/agent.json` and execution at `POST /a2a/<agentId>`.
+  The server boots through `createNodeServer` run with `tsx` (`pnpm a2a:dev`), which transpiles the
+  TypeScript workspace packages directly instead of going through the `mastra dev` bundler.
 - **Adversarial test:** an orchestrator that *claims* to have anchored a payload it never anchored
   gets `verified: false` (`NOT_FOUND` / `HASH_MISMATCH`).
 
@@ -623,7 +629,15 @@ pnpm test:a2a
 pnpm test:a2a:e2e
 
 # Dev server (needs OPENROUTER_API_KEY + chain env in .env.local)
+# Serves A2A on http://localhost:4111 (override with A2A_PORT)
 pnpm a2a:dev
+```
+
+Once running, fetch an agent card or invoke a skill:
+
+```bash
+curl http://localhost:4111/.well-known/anchor-payload/agent.json
+curl http://localhost:4111/.well-known/verify-anchor/agent.json
 ```
 
 Copy [packages/a2a-agent/.env.example](packages/a2a-agent/.env.example) keys into repo root
