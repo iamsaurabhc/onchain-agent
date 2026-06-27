@@ -5,3 +5,4 @@ dist/
 .env
 .env.local
 resume.tex
+packages/a2a-agent/.mastra
