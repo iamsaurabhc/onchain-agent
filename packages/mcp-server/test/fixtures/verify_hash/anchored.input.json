@@ -1,0 +1,16 @@
+{
+  "tool": "verify_hash",
+  "args": { "payload": "hello", "codecId": "raw", "algo": 1, "encoding": "utf8" },
+  "setup": {
+    "head": 100,
+    "confirmations": 1,
+    "seed": [
+      {
+        "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+        "algo": 1,
+        "blockNumber": 100,
+        "blockTimestamp": 1750000000
+      }
+    ]
+  }
+}

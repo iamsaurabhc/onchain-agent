@@ -8,9 +8,11 @@
     "fixtures": "pnpm -C packages/hash-core fixtures",
     "test:ts": "pnpm -C packages/hash-core test",
     "test:sol": "forge test --root contracts",
+    "test:mcp": "pnpm -C packages/mcp-server test",
+    "test:mcp:e2e": "forge build --root contracts && pnpm -C packages/mcp-server test:e2e",
     "test:e2e": "forge build --root contracts && pnpm -C packages/anchor-e2e test",
-    "test": "pnpm run test:ts && pnpm run test:sol",
-    "test:all": "pnpm run test && pnpm run test:e2e"
+    "test": "pnpm run test:ts && pnpm run test:sol && pnpm run test:mcp",
+    "test:all": "pnpm run test && pnpm run test:e2e && pnpm run test:mcp:e2e"
   },
   "license": "MIT",
   "pnpm": {

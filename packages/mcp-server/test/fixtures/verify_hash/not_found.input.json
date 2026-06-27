@@ -1,0 +1,5 @@
+{
+  "tool": "verify_hash",
+  "args": { "payload": "hello", "codecId": "raw", "algo": 1, "encoding": "utf8" },
+  "setup": { "head": 100, "confirmations": 1, "seed": [] }
+}

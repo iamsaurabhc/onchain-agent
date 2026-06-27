@@ -1,0 +1,11 @@
+{
+  "verified": true,
+  "method": "by_merkle",
+  "hash": "0x68203f90e9d07dc5859259d7536e87a6ba9d345f2552b5b9de2999ddce9ce1bf",
+  "anchorer": "0x00000000000000000000000000000000000000a1",
+  "blockNumber": 100,
+  "blockTimestamp": 1750000000,
+  "confirmations": 1,
+  "chainId": 80002,
+  "reason": null
+}

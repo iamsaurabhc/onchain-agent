@@ -1,0 +1,18 @@
+{
+  "tool": "get_anchor",
+  "args": { "hash": "0xc41589e7559804ea4a2080dad19d876a024ccb05117835447d72ce08c1d020ec" },
+  "setup": {
+    "head": 100,
+    "confirmations": 1,
+    "seed": [
+      {
+        "hash": "0xc41589e7559804ea4a2080dad19d876a024ccb05117835447d72ce08c1d020ec",
+        "algo": 2,
+        "isMerkleRoot": false,
+        "blockNumber": 100,
+        "blockTimestamp": 1750000000,
+        "metadataHash": "0xabababababababababababababababababababababababababababababababab"
+      }
+    ]
+  }
+}

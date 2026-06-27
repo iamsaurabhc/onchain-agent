@@ -1,0 +1,14 @@
+{
+  "verified": true,
+  "method": "by_hash",
+  "hash": "0xc41589e7559804ea4a2080dad19d876a024ccb05117835447d72ce08c1d020ec",
+  "anchorer": "0x00000000000000000000000000000000000000a1",
+  "blockNumber": 100,
+  "blockTimestamp": 1750000000,
+  "confirmations": 1,
+  "chainId": 80002,
+  "reason": null,
+  "algo": 2,
+  "isMerkleRoot": false,
+  "metadataHash": "0xabababababababababababababababababababababababababababababababab"
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@onchain-agent/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase D MCP server: anchoring & verification exposed as Mastra MCP tools.",
+  "bin": {
+    "onchain-anchor-mcp": "src/server.ts"
+  },
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mastra/core": "^0.10.0",
+    "@mastra/mcp": "^0.10.0",
+    "@onchain-agent/hash-core": "workspace:*",
+    "viem": "^2.21.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@viem/anvil": "^0.0.10",
+    "fast-check": "^3.23.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
