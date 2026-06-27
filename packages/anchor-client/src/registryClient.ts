@@ -15,6 +15,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import type { Hex32 } from "@onchain-agent/hash-core";
 import { loadAnchorRegistryArtifact } from "./abi.js";
 import type { Config } from "./config.js";
+import { DEFAULT_LOG_SCAN_MAX_RANGE, DEFAULT_LOG_SCAN_LOOKBACK } from "./config.js";
 
 /** Mirror of the on-chain `AnchorRecord` struct (§4.1), decoded off-chain. */
 export interface AnchorRecord {
@@ -116,11 +117,15 @@ export class ViemRegistryClient implements RegistryClient {
   private readonly publicClient: PublicClient;
   private readonly walletClient?: WalletClient;
   private readonly account?: Account;
+  private readonly logScanMaxRange: bigint;
+  private readonly logScanLookback: bigint;
 
   constructor(config: Config) {
     this.chainId = config.chainId;
     this.address = config.registryAddress;
     this.abi = loadAnchorRegistryArtifact().abi;
+    this.logScanMaxRange = BigInt(config.logScanMaxRange ?? DEFAULT_LOG_SCAN_MAX_RANGE);
+    this.logScanLookback = BigInt(config.logScanLookback ?? DEFAULT_LOG_SCAN_LOOKBACK);
 
     const chain = defineChain({
       id: config.chainId,
@@ -129,9 +134,13 @@ export class ViemRegistryClient implements RegistryClient {
       rpcUrls: { default: { http: [config.rpcUrl] } },
     });
 
+    // Retry/backoff so transient rate-limits (e.g. free-tier 429s) don't turn
+    // into a definitive RPC_ERROR; viem retries 429/5xx with exponential backoff.
+    const transport = http(config.rpcUrl, { retryCount: 6, retryDelay: 500 });
+
     this.publicClient = createPublicClient({
       chain,
-      transport: http(config.rpcUrl),
+      transport,
       cacheTime: 0,
     });
 
@@ -140,7 +149,7 @@ export class ViemRegistryClient implements RegistryClient {
       this.walletClient = createWalletClient({
         account: this.account,
         chain,
-        transport: http(config.rpcUrl),
+        transport,
       });
     }
   }
@@ -214,8 +223,7 @@ export class ViemRegistryClient implements RegistryClient {
     );
   }
 
-  async getAnchoredLogs(hash: Hex32, opts?: { fromBlock?: bigint }): Promise<AnchoredLog[]> {
-    const fromBlock = opts?.fromBlock ?? 0n;
+  private async getLogsInWindow(hash: Hex32, fromBlock: bigint, toBlock: bigint) {
     const [directLogs, merkleLogs] = await Promise.all([
       this.publicClient.getLogs({
         address: this.address,
@@ -232,7 +240,7 @@ export class ViemRegistryClient implements RegistryClient {
         },
         args: { hash },
         fromBlock,
-        toBlock: "latest",
+        toBlock,
       }),
       this.publicClient.getLogs({
         address: this.address,
@@ -248,11 +256,45 @@ export class ViemRegistryClient implements RegistryClient {
         },
         args: { root: hash },
         fromBlock,
-        toBlock: "latest",
+        toBlock,
       }),
     ]);
+    return [...directLogs, ...merkleLogs];
+  }
 
-    const allRaw = [...directLogs, ...merkleLogs];
+  /**
+   * Independent event-log scan. Chunks the `eth_getLogs` query into windows of
+   * `logScanMaxRange` blocks (to respect provider range caps, e.g. Alchemy's
+   * free tier 10-block limit) and walks newest→oldest with early exit on the
+   * first matching window.
+   */
+  async getAnchoredLogs(hash: Hex32, opts?: { fromBlock?: bigint }): Promise<AnchoredLog[]> {
+    const head = await this.publicClient.getBlockNumber();
+
+    const lookbackFloor =
+      this.logScanLookback > 0n && head > this.logScanLookback
+        ? head - this.logScanLookback
+        : 0n;
+    const minBlock = opts?.fromBlock ?? lookbackFloor;
+
+    const step = this.logScanMaxRange;
+    let allRaw: Awaited<ReturnType<ViemRegistryClient["getLogsInWindow"]>> = [];
+
+    let toBlock = head;
+    while (toBlock >= minBlock) {
+      const windowStart = toBlock - step + 1n;
+      const fromBlock = windowStart > minBlock ? windowStart : minBlock;
+
+      const raw = await this.getLogsInWindow(hash, fromBlock, toBlock);
+      if (raw.length > 0) {
+        allRaw = raw;
+        break;
+      }
+
+      if (fromBlock === minBlock) break;
+      toBlock = fromBlock - 1n;
+    }
+
     if (allRaw.length === 0) return [];
 
     const blockNumbers = [...new Set(allRaw.map((l) => l.blockNumber))];

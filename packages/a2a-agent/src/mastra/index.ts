@@ -38,6 +38,7 @@ export const mastra = createMastraInstance({
   toolset,
   anchorModel: resolveModel(a2aConfig.modelLarge, a2aConfig.openRouterApiKey),
   verifyModel: resolveModel(a2aConfig.modelSmall, a2aConfig.openRouterApiKey),
+  port: a2aConfig.a2aPort,
 });
 
 export { toolset };
