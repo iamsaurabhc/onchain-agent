@@ -1,20 +1,31 @@
-export { loadConfig, DEFAULT_CHAIN_ID, DEFAULT_CONFIRMATIONS } from "./config.js";
-export type { Config } from "./config.js";
 export {
+  loadConfig,
+  DEFAULT_CHAIN_ID,
+  DEFAULT_CONFIRMATIONS,
   ViemRegistryClient,
   ZERO_ADDRESS,
-} from "./registryClient.js";
+  Reason,
+  ok,
+  fail,
+  computeConfirmations,
+  isFinal,
+  decodeBytes,
+  toPayloadArg,
+  loadAnchorRegistryArtifact,
+  loadLocalEnv,
+  findRepoRoot,
+} from "@onchain-agent/anchor-client";
 export type {
+  Config,
   RegistryClient,
   AnchorRecord,
   AnchoredLog,
   AnchorWriteResult,
-} from "./registryClient.js";
-export { Reason, ok, fail } from "./result.js";
-export type { VerificationResult, VerificationMethod } from "./result.js";
-export { computeConfirmations, isFinal } from "./confirmations.js";
-export { decodeBytes, toPayloadArg } from "./payload.js";
-export type { PayloadEncoding, RawPayload } from "./payload.js";
-export { loadAnchorRegistryArtifact } from "./abi.js";
+  VerificationResult,
+  VerificationMethod,
+  PayloadEncoding,
+  RawPayload,
+} from "@onchain-agent/anchor-client";
+export { VerificationEngine, deriveDirectHash } from "@onchain-agent/verify-engine";
 export { createTools } from "./tools/index.js";
 export type { AnchorTools } from "./tools/index.js";

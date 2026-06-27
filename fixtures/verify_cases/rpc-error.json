@@ -1,0 +1,34 @@
+{
+  "id": "rpc-error",
+  "method": "by_payload",
+  "input": {
+    "payload": "hello",
+    "codecId": "raw",
+    "algo": 1,
+    "encoding": "utf8"
+  },
+  "mock": {
+    "head": 100,
+    "confirmationsRequired": 1,
+    "throwOnRead": true,
+    "records": [
+      {
+        "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+        "algo": 1,
+        "blockNumber": 100,
+        "blockTimestamp": 1750000000
+      }
+    ]
+  },
+  "expected": {
+    "verified": false,
+    "method": "by_payload",
+    "hash": null,
+    "anchorer": null,
+    "blockNumber": null,
+    "blockTimestamp": null,
+    "confirmations": null,
+    "chainId": 80002,
+    "reason": "RPC_ERROR"
+  }
+}

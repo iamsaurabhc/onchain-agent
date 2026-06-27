@@ -1,0 +1,38 @@
+{
+  "id": "invalid-merkle",
+  "method": "by_merkle",
+  "input": {
+    "root": "0x4938a282fd3c4c406cbea286db9ccca40b06016ed75e0a1d51685bf82bb29814",
+    "leaf": "0x3c625c3159dd5cbc25a290de2216ad2256fd9726dabc8437f30f87af53465287",
+    "proof": [
+      "0xae90eb3e424b72f100bd5d1861c00e08abb0202bbd912ef53571f4e2a937ff9f",
+      "0x7bf07e5e3db8ae1446cc8e63ffc8b5f4c6c310ea266c6c6fe8823aee02e3ed35",
+      "0x88df163fb1db5853cbfeb734109e9af12e970d5e35ff20c6e4f42697691b941c"
+    ],
+    "encoding": "utf8"
+  },
+  "mock": {
+    "head": 200,
+    "confirmationsRequired": 1,
+    "records": [
+      {
+        "hash": "0x4938a282fd3c4c406cbea286db9ccca40b06016ed75e0a1d51685bf82bb29814",
+        "algo": 32,
+        "isMerkleRoot": true,
+        "blockNumber": 150,
+        "blockTimestamp": 1750000100
+      }
+    ]
+  },
+  "expected": {
+    "verified": false,
+    "method": "by_merkle",
+    "hash": "0x4938a282fd3c4c406cbea286db9ccca40b06016ed75e0a1d51685bf82bb29814",
+    "anchorer": null,
+    "blockNumber": null,
+    "blockTimestamp": null,
+    "confirmations": null,
+    "chainId": 80002,
+    "reason": "MERKLE_PROOF_INVALID"
+  }
+}

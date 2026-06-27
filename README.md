@@ -10,16 +10,20 @@ off-chain, write only that hash on-chain, and can prove later that the exact pay
 or before a given block time. Verification always re-derives the hash and re-queries the chain,
 so a false claim ("I anchored this") resolves to `verified: false`.
 
-> **Status (v0.1):** Phases **A–D are implemented:**
+> **Status (v0.1):** Phases **A–E are implemented:**
 >
 > - **Phase A** — [`@onchain-agent/hash-core`](packages/hash-core): cross-language hashing & canonicalization + Solidity parity tests.
 > - **Phase B** — [`AnchorRegistry`](contracts/src/AnchorRegistry.sol): immutable, event-mirrored anchoring (first-seen wins).
 > - **Phase C** — Merkle batching: sorted-pair proofs compatible with OpenZeppelin + live anvil integration ([`anchor-e2e`](packages/anchor-e2e)).
-> - **Phase D** — [`@onchain-agent/mcp-server`](packages/mcp-server): five Mastra MCP tools over stdio, with live smoke tests against Amoy or local anvil.
+> - **Phase D** — [`@onchain-agent/mcp-server`](packages/mcp-server): six Mastra MCP tools over stdio, with live smoke tests against Amoy or local anvil.
+> - **Phase E** — [`@onchain-agent/verify-engine`](packages/verify-engine): unified six-method verification engine + optional live Amoy e2e ([`anchor-client`](packages/anchor-client) shared RPC layer).
 >
-> **Planned:** Phase E (full six-method verification engine + production Amoy integration) and Phase F
-> (Mastra A2A skills + optional safety-core wiring). The full spec lives in
+> **Planned:** Phase F (Mastra A2A skills + optional safety-core wiring). The full spec lives in
 > [docs/PHASE_ANCHOR_VERIFY.md](docs/PHASE_ANCHOR_VERIFY.md). This README is updated as each phase lands.
+>
+> **Related (separate protocol track):** [docs/PHASE_DEX.md](docs/PHASE_DEX.md) — a from-scratch
+> constant-product AMM DEX design doc (same phase-wise, test-first methodology; reuses the safety
+> core and `AnchorRegistry` where they fit). Design-only; not part of the anchor/verify capability.
 
 ---
 
@@ -274,30 +278,31 @@ required off-chain (see [Verification](#verification)).
 ## Verification
 
 The verification layer answers one question — "was this genuinely anchored?" — via six
-complementary methods. **Phase D** implements methods 1–4 plus finality (method 6) as MCP tools;
-**Phase E** will add the unified verification engine and method 5 (event-log scan cross-check).
+complementary methods. **Phase E** implements all six in [`@onchain-agent/verify-engine`](packages/verify-engine);
+MCP tools in Phase D/E delegate to the engine.
 
 | Method | Description | Status |
 | --- | --- | --- |
-| 1. By hash | `isAnchored(hash)` / `getRecord(hash)` | Phase D — `get_anchor` |
-| 2. By payload | Re-derive hash off-chain, then query chain | Phase D — `verify_hash` |
-| 3. By tx hash | Decode `Anchored` from receipt | Phase D — `verify_by_tx` |
-| 4. By Merkle proof | `verifyMerkle` **and** `isAnchored(root)` | Phase D — `verify_merkle_proof` |
-| 5. By event-log scan | Independent `eth_getLogs` cross-check | Phase E |
-| 6. By finality | Require `N` confirmations before `verified: true` | Phase D (in all verify tools) |
+| 1. By hash | `isAnchored(hash)` / `getRecord(hash)` | Phase E — `get_anchor` |
+| 2. By payload | Re-derive hash off-chain, then query chain | Phase E — `verify_hash` |
+| 3. By tx hash | Decode `Anchored` from receipt | Phase E — `verify_by_tx` |
+| 4. By Merkle proof | `verifyMerkle` **and** `isAnchored(root)` | Phase E — `verify_merkle_proof` |
+| 5. By event-log scan | Independent `eth_getLogs` cross-check | Phase E — `verify_by_log` |
+| 6. By finality | Require `N` confirmations before `verified: true` | Phase E (all verify paths) |
 
-### MCP tools (Phase D)
+### MCP tools (Phase D/E)
 
-[`@onchain-agent/mcp-server`](packages/mcp-server) exposes five tools via Mastra's stdio
+[`@onchain-agent/mcp-server`](packages/mcp-server) exposes six tools via Mastra's stdio
 `MCPServer`:
 
 | Tool | Purpose |
 | --- | --- |
 | `anchor_hash` | Derive a hash (or Merkle root) and write on-chain |
 | `verify_hash` | Re-derive from payload, query chain, apply finality |
-| `get_anchor` | Look up the stored record for a hash |
+| `get_anchor` | Look up the stored record for a hash (optional log cross-check) |
 | `verify_merkle_proof` | Prove membership in an anchored batch |
 | `verify_by_tx` | Verify via transaction receipt + event decode |
+| `verify_by_log` | Verify via independent event-log scan (`eth_getLogs`) |
 
 **Core invariant:** `verify_hash` **always re-derives** the hash from the supplied payload — it
 never trusts a caller-supplied hash as the query key. A mismatched `claimedHash` returns
@@ -356,18 +361,22 @@ onchain-agent/
 │   │   ├── src/               # algoTags, algorithms, normalizers, salt, merkle, hashPayload
 │   │   └── test/              # unit, fuzz, invariant (vitest)
 │   ├── anchor-e2e/            # Phase C: live anvil Merkle root + proof integration
-│   └── mcp-server/            # Phase D: Mastra MCPServer, tools, smoke scripts
-│       ├── src/               # config, registryClient, tools, server.ts
+│   ├── anchor-client/         # Phase E: shared config, RegistryClient, result types
+│   ├── verify-engine/         # Phase E: unified six-method VerificationEngine
+│   └── mcp-server/            # Phase D/E: Mastra MCPServer, thin tool wrappers, smoke scripts
+│       ├── src/tools/         # delegate to verify-engine
 │       ├── scripts/           # smoke-live.ts, smoke-mcp.ts
 │       └── test/fixtures/     # golden MCP request/response pairs per tool
 ├── fixtures/                  # shared cross-language goldens (Solidity + TS assert the same)
 │   ├── payloads/              # one representative input per taxonomy category
 │   ├── expected/              # golden { codecId, algo, salt?, hash } per payload
 │   ├── merkle/                # { leaves, root, proofs }
+│   ├── verify_cases/          # Phase E golden verification inputs/outputs
 │   ├── anchor_requests/       # Phase B golden anchor inputs
 │   └── manifest.json
 ├── docs/
-│   └── PHASE_ANCHOR_VERIFY.md # the full phase-wise build spec (source of truth)
+│   ├── PHASE_ANCHOR_VERIFY.md # anchor/verify phase-wise build spec (source of truth)
+│   └── PHASE_DEX.md           # separate DEX protocol design spec (design-only)
 └── info.md                    # the broader optional "safety core" design
 ```
 
@@ -453,7 +462,7 @@ For Merkle batching, build a root over many pre-hashed leaves via the `merkle` m
 
 The MCP server reads configuration from the environment. For local development, use a **repo root**
 [`.env.local`](.env.local) file (gitignored). It is loaded automatically by
-[packages/mcp-server/src/loadEnv.ts](packages/mcp-server/src/loadEnv.ts) (repo root first; optional
+[packages/anchor-client/src/loadEnv.ts](packages/anchor-client/src/loadEnv.ts) (repo root first; optional
 `packages/mcp-server/.env.local` fills keys not already set).
 
 Copy [packages/mcp-server/.env.example](packages/mcp-server/.env.example) to `.env.local` and fill in:
@@ -503,8 +512,13 @@ Once `.env.local` is configured:
 | `pnpm mcp:start` | Start the stdio MCP server (for Cursor, Claude Desktop, etc.) |
 | `pnpm mcp:smoke` | Live tool round-trip on your configured chain (no MCP protocol) |
 | `pnpm mcp:smoke:mcp` | Full MCP stdio client → server smoke (no IDE required) |
+| `pnpm test:verify` | Phase E verification engine tests (mocked RPC) |
+| `AMOY_E2E=1 pnpm test:verify:amoy` | Live Amoy e2e: anchor, poll confirmations, verify all methods |
 
-Phase D uses **stdio MCP** — there is no HTTP auth layer. Trust is cryptographic: `verify_hash`
+| `pnpm test:verify` | Phase E unit/fuzz/invariant tests (mocked RPC) |
+| `AMOY_E2E=1 pnpm test:verify:amoy` | Optional live Amoy anchor-then-verify e2e (requires `.env.local`) |
+
+Phase D/E uses **stdio MCP** — there is no HTTP auth layer. Trust is cryptographic: `verify_hash`
 re-derives hashes from payloads; `ANCHORER_PRIVATE_KEY` lives in server env only (not a tool
 argument), so callers cannot anchor without the server being configured with a signer.
 
@@ -536,11 +550,11 @@ Tests follow the unit → fuzz → invariant → integration taxonomy.
   first-seen-wins. **Implemented.**
 - **Phase C — Merkle batching.** Sound batch membership; every member leaf verifies, no
   non-member ever does; live anvil integration. **Implemented.**
-- **Phase D — MCP server tools.** Five Mastra MCP tools (`anchor_hash`, `verify_hash`,
-  `get_anchor`, `verify_merkle_proof`, `verify_by_tx`); `verify_hash` always re-derives; Amoy/local
+- **Phase D — MCP server tools.** Six Mastra MCP tools; `verify_hash` always re-derives; Amoy/local
   smoke scripts. **Implemented.**
-- **Phase E — Verification engine / Amoy integration.** Unified engine with all six methods
-  (including event-log scan) plus production Amoy round trips. *Planned.*
+- **Phase E — Verification engine / Amoy integration.** [`@onchain-agent/verify-engine`](packages/verify-engine)
+  with all six methods (including event-log scan + REORG detection), golden `fixtures/verify_cases/`,
+  and optional live Amoy e2e (`AMOY_E2E=1 pnpm test:verify:amoy`). **Implemented.**
 - **Phase F — A2A skills + optional core integration + docs.** Reference agent skills
   (`anchor-payload`, `verify-anchor`) and optional wiring into the safety core. *Planned.*
 

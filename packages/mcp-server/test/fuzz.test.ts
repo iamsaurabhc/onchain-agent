@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createTools } from "../src/tools/index.js";
-import { FakeRegistry } from "./helpers/fakeRegistry.js";
+import { FakeRegistry } from "@onchain-agent/anchor-client/test/fakeRegistry";
 import { runTool, testConfig } from "./helpers/run.js";
 
 function toolsForFreshRegistry() {

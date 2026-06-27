@@ -1,0 +1,15 @@
+{
+  "cases": [
+    "anchored-and-final",
+    "anchored-too-few-confs",
+    "not-anchored",
+    "payload-mismatch",
+    "valid-merkle",
+    "invalid-merkle",
+    "root-not-anchored",
+    "reorg-storage-no-logs",
+    "rpc-error",
+    "by-log-scan-anchored",
+    "by-log-scan-not-found"
+  ]
+}

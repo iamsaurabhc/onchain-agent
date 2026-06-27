@@ -1,5 +1,5 @@
+import { Reason, type VerificationMethod } from "@onchain-agent/anchor-client";
 import { z } from "zod";
-import { Reason, type VerificationMethod } from "../result.js";
 
 /** 0x-prefixed 32-byte hex string. */
 export const hex32 = z

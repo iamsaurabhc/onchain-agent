@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Hex32 } from "@onchain-agent/hash-core";
 import { createTools } from "../src/tools/index.js";
-import { FakeRegistry } from "./helpers/fakeRegistry.js";
+import { FakeRegistry } from "@onchain-agent/anchor-client/test/fakeRegistry";
 import { runTool, testConfig } from "./helpers/run.js";
 
 // Tree over utf8 leaves "a","b","c","d" (hash-core sorted-pair convention).

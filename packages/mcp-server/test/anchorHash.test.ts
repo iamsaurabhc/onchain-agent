@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Hex32 } from "@onchain-agent/hash-core";
 import { createTools } from "../src/tools/index.js";
-import { FAKE_ANCHORER, FakeRegistry } from "./helpers/fakeRegistry.js";
+import { FAKE_ANCHORER, FakeRegistry } from "@onchain-agent/anchor-client/test/fakeRegistry";
 import { runTool, testConfig } from "./helpers/run.js";
 
 const HELLO_HASH = "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8" as Hex32;

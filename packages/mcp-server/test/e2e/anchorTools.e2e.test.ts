@@ -11,17 +11,15 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 import { merkle, utf8, type Hex32 } from "@onchain-agent/hash-core";
-import { loadAnchorRegistryArtifact } from "../../src/abi.js";
-import type { Config } from "../../src/config.js";
-import { ViemRegistryClient } from "../../src/registryClient.js";
+import { loadAnchorRegistryArtifact, ViemRegistryClient } from "@onchain-agent/anchor-client";
+import type { Config } from "@onchain-agent/anchor-client";
 import { createTools, type AnchorTools } from "../../src/tools/index.js";
 import { runTool } from "../helpers/run.js";
 
-// Standard anvil dev account #0 (deterministic; safe for a local node only).
 const DEV_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as Hex;
 const ANVIL_CHAIN_ID = 31337;
 
-describe("e2e: Phase D tools against a deployed AnchorRegistry on anvil", () => {
+describe("e2e: Phase D/E tools against a deployed AnchorRegistry on anvil", () => {
   let anvil: Anvil;
   let tools: AnchorTools;
   let devAddress: Address;
@@ -61,7 +59,7 @@ describe("e2e: Phase D tools against a deployed AnchorRegistry on anvil", () => 
     await anvil?.stop();
   });
 
-  it("anchor_hash -> verify_hash -> get_anchor -> verify_by_tx round-trip (direct)", async () => {
+  it("anchor_hash -> verify_hash -> get_anchor -> verify_by_tx -> verify_by_log round-trip (direct)", async () => {
     const args = { payload: "phase-d e2e payload", codecId: "raw", algo: 1, encoding: "utf8" };
 
     const anchored = await runTool(tools.anchor_hash, args);
@@ -89,6 +87,11 @@ describe("e2e: Phase D tools against a deployed AnchorRegistry on anvil", () => 
     expect(byTx.verified).toBe(true);
     expect(byTx.method).toBe("by_tx");
     expect(byTx.hash).toBe(anchored.hash);
+
+    const byLog = await runTool(tools.verify_by_log, { hash: anchored.hash });
+    expect(byLog.verified).toBe(true);
+    expect(byLog.method).toBe("by_log_scan");
+    expect(byLog.hash).toBe(anchored.hash);
   });
 
   it("anchor_hash (merkle) -> verify_merkle_proof for a member, and rejects a non-member", async () => {

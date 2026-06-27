@@ -26,7 +26,7 @@ export interface AnchorRecord {
   metadataHash: Hex;
 }
 
-/** A decoded `Anchored` / `MerkleRootAnchored` event from a tx receipt. */
+/** A decoded `Anchored` / `MerkleRootAnchored` event from a tx receipt or log scan. */
 export interface AnchoredLog {
   hash: Hex32;
   anchorer: Address;
@@ -44,9 +44,15 @@ export interface AnchorWriteResult {
   anchorer: Address;
 }
 
+/** Minimal tx receipt for reorg detection. */
+export interface TxReceiptSummary {
+  status: "success" | "reverted";
+  blockNumber: bigint;
+}
+
 /**
- * Narrow chain-access surface used by the tools. Verification tools depend only
- * on this interface, so unit tests inject a mock and never touch a real RPC.
+ * Narrow chain-access surface used by the verification engine. Unit tests inject
+ * a mock and never touch a real RPC.
  */
 export interface RegistryClient {
   readonly chainId: number;
@@ -62,10 +68,45 @@ export interface RegistryClient {
   getHeadBlockNumber(): Promise<bigint>;
   /** Fetch a tx receipt and decode all anchoring events it emitted. */
   parseAnchoredLogs(txHash: Hex32): Promise<AnchoredLog[]>;
+  /** Independent event-log scan filtered on `Anchored(hash)` / `MerkleRootAnchored(root)`. */
+  getAnchoredLogs(hash: Hex32, opts?: { fromBlock?: bigint }): Promise<AnchoredLog[]>;
+  /** Fetch a tx receipt; null if the tx is no longer found (reorg). */
+  getTransactionReceipt(txHash: Hex32): Promise<TxReceiptSummary | null>;
 }
 
 /** The zero address denotes "no record" in the registry mapping. */
 export const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+
+function decodeAnchoredLogsFromReceipt(
+  abi: Abi,
+  logs: Parameters<typeof parseEventLogs>[0]["logs"],
+  blockNumber: bigint,
+  blockTimestamp: bigint,
+): AnchoredLog[] {
+  const parsed = parseEventLogs({
+    abi,
+    logs,
+    eventName: ["Anchored", "MerkleRootAnchored"],
+  });
+  return parsed.map((log) => {
+    const args = log.args as {
+      hash?: Hex32;
+      root?: Hex32;
+      anchorer: Address;
+      algo: number;
+      isMerkleRoot?: boolean;
+    };
+    const isMerkleRoot = log.eventName === "MerkleRootAnchored";
+    return {
+      hash: (args.hash ?? args.root) as Hex32,
+      anchorer: args.anchorer,
+      algo: args.algo,
+      isMerkleRoot: args.isMerkleRoot ?? isMerkleRoot,
+      blockTimestamp,
+      blockNumber,
+    };
+  });
+}
 
 /** viem-backed implementation against a deployed `AnchorRegistry`. */
 export class ViemRegistryClient implements RegistryClient {
@@ -88,8 +129,6 @@ export class ViemRegistryClient implements RegistryClient {
       rpcUrls: { default: { http: [config.rpcUrl] } },
     });
 
-    // cacheTime: 0 so getBlockNumber always reflects the latest head; a stale
-    // cached head would understate confirmations for a just-mined anchor.
     this.publicClient = createPublicClient({
       chain,
       transport: http(config.rpcUrl),
@@ -167,29 +206,91 @@ export class ViemRegistryClient implements RegistryClient {
   async parseAnchoredLogs(txHash: Hex32): Promise<AnchoredLog[]> {
     const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
     const block = await this.publicClient.getBlock({ blockNumber: receipt.blockNumber });
-    const logs = parseEventLogs({
-      abi: this.abi,
-      logs: receipt.logs,
-      eventName: ["Anchored", "MerkleRootAnchored"],
+    return decodeAnchoredLogsFromReceipt(
+      this.abi,
+      receipt.logs,
+      receipt.blockNumber,
+      block.timestamp,
+    );
+  }
+
+  async getAnchoredLogs(hash: Hex32, opts?: { fromBlock?: bigint }): Promise<AnchoredLog[]> {
+    const fromBlock = opts?.fromBlock ?? 0n;
+    const [directLogs, merkleLogs] = await Promise.all([
+      this.publicClient.getLogs({
+        address: this.address,
+        event: {
+          type: "event",
+          name: "Anchored",
+          inputs: [
+            { type: "bytes32", indexed: true, name: "hash" },
+            { type: "address", indexed: true, name: "anchorer" },
+            { type: "uint8", indexed: false, name: "algo" },
+            { type: "bool", indexed: false, name: "isMerkleRoot" },
+            { type: "uint64", indexed: false, name: "blockTimestamp" },
+          ],
+        },
+        args: { hash },
+        fromBlock,
+        toBlock: "latest",
+      }),
+      this.publicClient.getLogs({
+        address: this.address,
+        event: {
+          type: "event",
+          name: "MerkleRootAnchored",
+          inputs: [
+            { type: "bytes32", indexed: true, name: "root" },
+            { type: "address", indexed: true, name: "anchorer" },
+            { type: "uint8", indexed: false, name: "algo" },
+            { type: "uint64", indexed: false, name: "blockTimestamp" },
+          ],
+        },
+        args: { root: hash },
+        fromBlock,
+        toBlock: "latest",
+      }),
+    ]);
+
+    const allRaw = [...directLogs, ...merkleLogs];
+    if (allRaw.length === 0) return [];
+
+    const blockNumbers = [...new Set(allRaw.map((l) => l.blockNumber))];
+    const blocks = await Promise.all(
+      blockNumbers.map((bn) => this.publicClient.getBlock({ blockNumber: bn })),
+    );
+    const tsByBlock = new Map(blocks.map((b) => [b.number, b.timestamp]));
+
+    const results: AnchoredLog[] = [];
+    for (const raw of allRaw) {
+      const decoded = decodeAnchoredLogsFromReceipt(
+        this.abi,
+        [raw],
+        raw.blockNumber,
+        tsByBlock.get(raw.blockNumber) ?? 0n,
+      );
+      results.push(...decoded);
+    }
+
+    results.sort((a, b) => {
+      if (a.blockNumber !== b.blockNumber) {
+        return a.blockNumber < b.blockNumber ? -1 : 1;
+      }
+      return 0;
     });
-    return logs.map((log) => {
-      const args = log.args as {
-        hash?: Hex32;
-        root?: Hex32;
-        anchorer: Address;
-        algo: number;
-        isMerkleRoot?: boolean;
-      };
-      const isMerkleRoot = log.eventName === "MerkleRootAnchored";
+    return results;
+  }
+
+  async getTransactionReceipt(txHash: Hex32): Promise<TxReceiptSummary | null> {
+    try {
+      const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
       return {
-        hash: (args.hash ?? args.root) as Hex32,
-        anchorer: args.anchorer,
-        algo: args.algo,
-        isMerkleRoot: args.isMerkleRoot ?? isMerkleRoot,
-        blockTimestamp: block.timestamp,
+        status: receipt.status,
         blockNumber: receipt.blockNumber,
       };
-    });
+    } catch {
+      return null;
+    }
   }
 
   private async write(

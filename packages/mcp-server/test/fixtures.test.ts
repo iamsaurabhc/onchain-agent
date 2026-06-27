@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { Hex32 } from "@onchain-agent/hash-core";
 import type { Address } from "viem";
+import type { AnchoredLog } from "@onchain-agent/anchor-client";
+import { FakeRegistry } from "@onchain-agent/anchor-client/test/fakeRegistry";
 import { createTools } from "../src/tools/index.js";
-import type { AnchoredLog } from "../src/registryClient.js";
-import { FakeRegistry } from "./helpers/fakeRegistry.js";
 import { runTool, testConfig } from "./helpers/run.js";
 
 const here = dirname(fileURLToPath(import.meta.url));

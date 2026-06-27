@@ -1,0 +1,32 @@
+{
+  "id": "reorg-storage-no-logs",
+  "method": "by_hash",
+  "input": {
+    "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+    "crossCheckLogs": true
+  },
+  "mock": {
+    "head": 100,
+    "confirmationsRequired": 1,
+    "records": [
+      {
+        "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+        "algo": 1,
+        "blockNumber": 100,
+        "blockTimestamp": 1750000000
+      }
+    ],
+    "anchoredLogs": []
+  },
+  "expected": {
+    "verified": false,
+    "method": "by_hash",
+    "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+    "anchorer": "0x00000000000000000000000000000000000000a1",
+    "blockNumber": 100,
+    "blockTimestamp": 1750000000,
+    "confirmations": null,
+    "chainId": 80002,
+    "reason": "REORG"
+  }
+}

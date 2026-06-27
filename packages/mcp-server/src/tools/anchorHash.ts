@@ -7,10 +7,9 @@ import {
   merkle,
   type Hex32,
 } from "@onchain-agent/hash-core";
-import type { Config } from "../config.js";
-import type { RegistryClient } from "../registryClient.js";
-import { decodeBytes, type PayloadEncoding } from "../payload.js";
-import { deriveDirectHash } from "./_shared.js";
+import type { Config, RegistryClient } from "@onchain-agent/anchor-client";
+import { decodeBytes, type PayloadEncoding } from "@onchain-agent/anchor-client";
+import { deriveDirectHash } from "@onchain-agent/verify-engine";
 import {
   algoSchema,
   codecIdSchema,
@@ -34,12 +33,7 @@ const anchorOutputSchema = z.object({
   salt: hex32.optional(),
 });
 
-/**
- * `anchor_hash` — derive a hash from a payload (or a Merkle root from leaves)
- * and write it on-chain via `AnchorRegistry`. Returns the hash plus the tx /
- * block reference. Requires a configured signer (ANCHORER_PRIVATE_KEY).
- */
-export function makeAnchorHash(client: RegistryClient, config: Config) {
+export function makeAnchorHash(client: RegistryClient, _config: Config) {
   return createTool({
     id: "anchor_hash",
     description:

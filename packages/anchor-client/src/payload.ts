@@ -36,13 +36,11 @@ export function toPayloadArg(
 ): unknown {
   if (codecId === CodecId.JCS) {
     if (typeof payload === "string") {
-      // Allow a JSON string to be passed for jcs; parse it to an object/array.
       return JSON.parse(payload);
     }
     return payload;
   }
 
-  // All other codecs are byte-oriented (raw and the digest adopters).
   if (typeof payload !== "string") {
     throw new Error(`codec '${codecId}' requires a string payload (got ${typeof payload})`);
   }

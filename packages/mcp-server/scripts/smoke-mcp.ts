@@ -5,10 +5,12 @@
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { findMcpServerRoot, loadLocalEnv } from "../src/loadEnv.js";
-import { join } from "node:path";
+import { loadLocalEnv } from "@onchain-agent/anchor-client";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-loadLocalEnv(import.meta.url);
+const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+loadLocalEnv(import.meta.url, pkgRoot);
 
 function pass(label: string): void {
   console.log(`  ✓ ${label}`);
@@ -29,7 +31,6 @@ function parseToolJson(result: unknown): unknown {
 async function main(): Promise<void> {
   console.log("onchain-anchor smoke (MCP stdio client → server)\n");
 
-  const pkgRoot = findMcpServerRoot(import.meta.url);
   const serverEntry = join(pkgRoot, "src", "server.ts");
 
   const childEnv = Object.fromEntries(
@@ -55,6 +56,7 @@ async function main(): Promise<void> {
     const expected = [
       "anchor_hash",
       "get_anchor",
+      "verify_by_log",
       "verify_by_tx",
       "verify_hash",
       "verify_merkle_proof",
@@ -98,6 +100,20 @@ async function main(): Promise<void> {
       fail("MCP verify_hash after anchor", verified);
     } else {
       pass("MCP verify_hash → verified:true");
+    }
+
+    const byLogResult = await client.callTool({
+      name: "verify_by_log",
+      arguments: { hash: anchored.hash },
+    });
+    const byLog = parseToolJson(byLogResult) as {
+      verified: boolean;
+      method: string;
+    };
+    if (byLog.verified !== true || byLog.method !== "by_log_scan") {
+      fail("MCP verify_by_log", byLog);
+    } else {
+      pass("MCP verify_by_log → verified:true");
     }
 
     const adversarial = await client.callTool({

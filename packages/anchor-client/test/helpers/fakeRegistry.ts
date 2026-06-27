@@ -5,11 +5,11 @@ import type {
   AnchoredLog,
   AnchorWriteResult,
   RegistryClient,
+  TxReceiptSummary,
 } from "../../src/registryClient.js";
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 const ZERO_HASH = `0x${"0".repeat(64)}` as Hex32;
-/** Deterministic default anchorer for the fake (lowercase for easy fixture diffs). */
 export const FAKE_ANCHORER = "0x00000000000000000000000000000000000000a1" as Address;
 
 const ZERO_RECORD: AnchorRecord = {
@@ -43,6 +43,8 @@ export class FakeRegistry implements RegistryClient {
 
   private readonly records = new Map<string, AnchorRecord>();
   private readonly txLogs = new Map<string, AnchoredLog[]>();
+  private readonly logsByHash = new Map<string, AnchoredLog[]>();
+  private readonly receipts = new Map<string, TxReceiptSummary>();
   private txCounter = 0n;
 
   constructor(opts?: { chainId?: number; head?: bigint }) {
@@ -66,6 +68,23 @@ export class FakeRegistry implements RegistryClient {
   /** Pre-seed the decoded logs returned for a given tx hash. */
   seedTxLogs(txHash: Hex32, logs: AnchoredLog[]): this {
     this.txLogs.set(txHash.toLowerCase(), logs);
+    return this;
+  }
+
+  /** Pre-seed event logs returned by `getAnchoredLogs` for a hash. */
+  seedAnchoredLogs(hash: Hex32, logs: AnchoredLog[]): this {
+    this.logsByHash.set(hash.toLowerCase(), logs);
+    return this;
+  }
+
+  /** Pre-seed a tx receipt for reorg tests. */
+  seedReceipt(txHash: Hex32, receipt: TxReceiptSummary | null): this {
+    const key = txHash.toLowerCase();
+    if (receipt === null) {
+      this.receipts.delete(key);
+    } else {
+      this.receipts.set(key, receipt);
+    }
     return this;
   }
 
@@ -110,6 +129,41 @@ export class FakeRegistry implements RegistryClient {
     return this.txLogs.get(txHash.toLowerCase()) ?? [];
   }
 
+  async getAnchoredLogs(hash: Hex32): Promise<AnchoredLog[]> {
+    this.maybeThrow();
+    const key = hash.toLowerCase();
+    if (this.logsByHash.has(key)) {
+      return this.logsByHash.get(key) ?? [];
+    }
+    // Default: derive logs from stored records when not explicitly seeded.
+    const rec = this.records.get(key);
+    if (!rec || rec.anchorer === ZERO_ADDRESS) return [];
+    return [
+      {
+        hash,
+        anchorer: rec.anchorer,
+        algo: rec.algo,
+        isMerkleRoot: rec.isMerkleRoot,
+        blockTimestamp: rec.blockTimestamp,
+        blockNumber: rec.blockNumber,
+      },
+    ];
+  }
+
+  async getTransactionReceipt(txHash: Hex32): Promise<TxReceiptSummary | null> {
+    this.maybeThrow();
+    const key = txHash.toLowerCase();
+    if (this.receipts.has(key)) {
+      return this.receipts.get(key) ?? null;
+    }
+    if (this.txLogs.has(key)) {
+      const logs = this.txLogs.get(key)!;
+      const blockNumber = logs[0]?.blockNumber ?? this.head;
+      return { status: "success", blockNumber };
+    }
+    return null;
+  }
+
   private write(
     hash: Hex32,
     algo: number,
@@ -122,6 +176,14 @@ export class FakeRegistry implements RegistryClient {
     }
     const blockNumber = this.head;
     const blockTimestamp = 1_750_000_000n + this.txCounter;
+    const log: AnchoredLog = {
+      hash,
+      anchorer: FAKE_ANCHORER,
+      algo,
+      isMerkleRoot,
+      blockTimestamp,
+      blockNumber,
+    };
     this.records.set(key, {
       anchorer: FAKE_ANCHORER,
       blockTimestamp,
@@ -130,11 +192,11 @@ export class FakeRegistry implements RegistryClient {
       isMerkleRoot,
       metadataHash,
     });
+    this.logsByHash.set(key, [log]);
     const txHash = `0x${(this.txCounter + 1n).toString(16).padStart(64, "0")}` as Hex32;
     this.txCounter += 1n;
-    this.txLogs.set(txHash.toLowerCase(), [
-      { hash, anchorer: FAKE_ANCHORER, algo, isMerkleRoot, blockTimestamp, blockNumber },
-    ]);
+    this.txLogs.set(txHash.toLowerCase(), [log]);
+    this.receipts.set(txHash.toLowerCase(), { status: "success", blockNumber });
     return { txHash, blockNumber, blockTimestamp, anchorer: FAKE_ANCHORER };
   }
 }

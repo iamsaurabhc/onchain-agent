@@ -1,15 +1,12 @@
-import type { Config } from "../config.js";
-import type { RegistryClient } from "../registryClient.js";
+import type { Config, RegistryClient } from "@onchain-agent/anchor-client";
 import { makeAnchorHash } from "./anchorHash.js";
 import { makeGetAnchor } from "./getAnchor.js";
+import { makeVerifyByLog } from "./verifyByLog.js";
 import { makeVerifyByTx } from "./verifyByTx.js";
 import { makeVerifyHash } from "./verifyHash.js";
 import { makeVerifyMerkleProof } from "./verifyMerkleProof.js";
 
-/**
- * Build the five Phase D MCP tools bound to a `RegistryClient` + `Config`.
- * Tests inject a mock client; the server binds the viem-backed client.
- */
+/** Build the Phase D/E MCP tools bound to a `RegistryClient` + `Config`. */
 export function createTools(client: RegistryClient, config: Config) {
   return {
     anchor_hash: makeAnchorHash(client, config),
@@ -17,6 +14,7 @@ export function createTools(client: RegistryClient, config: Config) {
     get_anchor: makeGetAnchor(client, config),
     verify_merkle_proof: makeVerifyMerkleProof(client, config),
     verify_by_tx: makeVerifyByTx(client, config),
+    verify_by_log: makeVerifyByLog(client, config),
   };
 }
 
@@ -24,6 +22,7 @@ export type AnchorTools = ReturnType<typeof createTools>;
 
 export { makeAnchorHash } from "./anchorHash.js";
 export { makeGetAnchor } from "./getAnchor.js";
+export { makeVerifyByLog } from "./verifyByLog.js";
 export { makeVerifyByTx } from "./verifyByTx.js";
 export { makeVerifyHash } from "./verifyHash.js";
 export { makeVerifyMerkleProof } from "./verifyMerkleProof.js";

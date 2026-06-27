@@ -1,0 +1,24 @@
+{
+  "id": "by-log-scan-not-found",
+  "method": "by_log_scan",
+  "input": {
+    "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8"
+  },
+  "mock": {
+    "head": 100,
+    "confirmationsRequired": 1,
+    "records": [],
+    "anchoredLogs": []
+  },
+  "expected": {
+    "verified": false,
+    "method": "by_log_scan",
+    "hash": "0x1c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8",
+    "anchorer": null,
+    "blockNumber": null,
+    "blockTimestamp": null,
+    "confirmations": null,
+    "chainId": 80002,
+    "reason": "NOT_FOUND"
+  }
+}

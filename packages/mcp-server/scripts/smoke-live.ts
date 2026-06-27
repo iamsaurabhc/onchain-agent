@@ -2,20 +2,18 @@
 /**
  * Live smoke test: run MCP tools directly against the chain configured in
  * `.env.local` (repo root or package). No Cursor required.
- *
- * Covers:
- * - anchor_hash → verify_hash happy path
- * - adversarial claimed hash (HASH_MISMATCH)
- * - never-anchored payload (NOT_FOUND)
- * - anchor without signer fails when ANCHORER_PRIVATE_KEY is unset
  */
-import { loadLocalEnv } from "../src/loadEnv.js";
-import { loadConfig } from "../src/config.js";
-import { ViemRegistryClient } from "../src/registryClient.js";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  loadLocalEnv,
+  loadConfig,
+  ViemRegistryClient,
+} from "@onchain-agent/anchor-client";
 import { createTools } from "../src/tools/index.js";
 import { runTool } from "../test/helpers/run.js";
 
-loadLocalEnv(import.meta.url);
+loadLocalEnv(import.meta.url, dirname(fileURLToPath(import.meta.url)) + "/..");
 
 function pass(label: string): void {
   console.log(`  ✓ ${label}`);
@@ -30,10 +28,11 @@ async function main(): Promise<void> {
   console.log("onchain-anchor smoke (live tools, no MCP stdio)\n");
 
   const config = loadConfig();
-  // Smoke tests verify tool logic, not 64-block finality — use 1 confirmation here.
   const smokeConfig = { ...config, confirmations: 1 };
   console.log(`  chainId=${smokeConfig.chainId} registry=${smokeConfig.registryAddress}`);
-  console.log(`  confirmations=${smokeConfig.confirmations} (smoke override; env had ${config.confirmations})\n`);
+  console.log(
+    `  confirmations=${smokeConfig.confirmations} (smoke override; env had ${config.confirmations})\n`,
+  );
 
   const client = new ViemRegistryClient(smokeConfig);
   const tools = createTools(client, smokeConfig);
@@ -41,7 +40,6 @@ async function main(): Promise<void> {
   const payload = `smoke-${Date.now()}`;
   const args = { payload, codecId: "raw", algo: 1, encoding: "utf8" };
 
-  // 1. Anchor + verify round-trip
   try {
     const anchored = await runTool(tools.anchor_hash, args);
     if (!anchored.hash || !anchored.txHash) {
@@ -69,11 +67,27 @@ async function main(): Promise<void> {
     } else {
       pass("verify_by_tx → verified:true");
     }
+
+    const byLog = await runTool(tools.verify_by_log, { hash: anchored.hash });
+    if (byLog.verified !== true || byLog.method !== "by_log_scan") {
+      fail("verify_by_log", byLog);
+    } else {
+      pass("verify_by_log → verified:true (event-log scan)");
+    }
+
+    const crossCheck = await runTool(tools.get_anchor, {
+      hash: anchored.hash,
+      crossCheckLogs: true,
+    });
+    if (crossCheck.verified !== true) {
+      fail("get_anchor crossCheckLogs", crossCheck);
+    } else {
+      pass("get_anchor crossCheckLogs → verified:true");
+    }
   } catch (err) {
     fail("anchor/verify round-trip threw", err);
   }
 
-  // 2. Adversarial: wrong claimed hash must not verify as anchored
   try {
     const bad = await runTool(tools.verify_hash, {
       ...args,
@@ -89,7 +103,6 @@ async function main(): Promise<void> {
     fail("adversarial verify threw", err);
   }
 
-  // 3. Never anchored
   try {
     const missing = await runTool(tools.verify_hash, {
       payload: `never-${Date.now()}`,
@@ -106,7 +119,6 @@ async function main(): Promise<void> {
     fail("never-anchored verify threw", err);
   }
 
-  // 4. Write path requires server-side signer (not in tool args)
   if (!config.anchorerPrivateKey) {
     try {
       await runTool(tools.anchor_hash, {

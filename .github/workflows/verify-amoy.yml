@@ -1,0 +1,39 @@
+name: Verify Amoy E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  verify-amoy:
+    if: ${{ secrets.AMOY_RPC_URL != '' && secrets.AMOY_REGISTRY_ADDRESS != '' && secrets.AMOY_ANCHORER_PRIVATE_KEY != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - run: pnpm install --frozen-lockfile
+      - run: forge build --root contracts
+
+      - name: Run Amoy verification e2e
+        env:
+          AMOY_E2E: "1"
+          RPC_URL: ${{ secrets.AMOY_RPC_URL }}
+          ANCHOR_REGISTRY_ADDRESS: ${{ secrets.AMOY_REGISTRY_ADDRESS }}
+          ANCHORER_PRIVATE_KEY: ${{ secrets.AMOY_ANCHORER_PRIVATE_KEY }}
+          CHAIN_ID: "80002"
+          CONFIRMATIONS: "5"
+        run: pnpm test:verify:amoy

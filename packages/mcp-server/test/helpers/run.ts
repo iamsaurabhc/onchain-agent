@@ -1,4 +1,4 @@
-import type { Config } from "../../src/config.js";
+import type { Config } from "@onchain-agent/anchor-client";
 
 /** A test Config with a low confirmation depth by default. */
 export function testConfig(over?: Partial<Config>): Config {
@@ -12,8 +12,6 @@ export function testConfig(over?: Partial<Config>): Config {
 }
 
 interface RunnableTool {
-  // `any` ctx avoids function-parameter contravariance clashes with the precise
-  // ToolExecutionContext that createTool infers per tool.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   execute?: (ctx: any) => Promise<any>;
   inputSchema?: { parse: (v: unknown) => unknown };
